@@ -1,0 +1,116 @@
+int pump = 2;                             // Relay Signal pins
+int drain_pump = 3;
+int top_switch = 5;                       // Float Switches
+int bottom_switch = 6;
+int Top_switch_status;                    // Float Statuses
+int Bottom_switch_status;
+int Button = 7;                          // INPUT pin that turns HIGH to run a constat ON state for the Val variable
+int Reader = A5;                        // Reader to detect an "ON" state
+int Signal = 8;                        // Signal pin to run a "HIGH" output to power relays
+int val;
+
+
+
+void setup()
+{
+    Serial.begin(9600);                    // Start Serial
+   
+                                           // Set pinmodes
+    pinMode(pump, OUTPUT);
+    pinMode(drain_pump, OUTPUT);
+    pinMode(top_switch, INPUT);
+    pinMode(bottom_switch, INPUT);
+    pinMode(Button, INPUT);
+    pinMode(Reader, INPUT);
+    pinMode(Signal, OUTPUT);
+
+                                                // Run power to the float switches
+    digitalWrite(top_switch, HIGH);         
+    digitalWrite(bottom_switch, HIGH);
+
+}
+
+void loop() 
+{
+  
+  val = digitalRead(Reader);   // Reads the input pin A5 (Reader)
+  digitalWrite(Button, val);   // Sets pin 7 to the reader's value
+  
+  if(val == HIGH)
+  {
+    WaterChange();
+   }   
+
+}
+
+void WaterChange()
+{
+   
+   Top_switch_status = digitalRead(top_switch);                 // Reads status of the top switch
+   Bottom_switch_status = digitalRead(bottom_switch);           // Reads status of the bottom switch
+
+   Serial.print("Top Switch: ");                               // Prints Status of the top switch
+   Serial.println(Top_switch_status);
+   Serial.print(" ");
+   delay(2000);
+   Serial.print("Bottom Switch: ");                           // Prints Status of the bottom switch
+   Serial.println(Bottom_switch_status);
+   delay(2000);
+
+   digitalWrite(Signal, HIGH);                               // Turn on the pumps
+
+    
+    do
+    {
+        digitalWrite(pump, HIGH);           // Draining.............
+        digitalWrite(drain_pump, LOW); 
+
+        Top_switch_status = digitalRead(top_switch);                 // Reads status of the top switch
+        Bottom_switch_status = digitalRead(bottom_switch);           // Reads status of the bottom switch
+
+        Serial.print("Top Switch: ");                               // Prints Status of the top switch
+        Serial.println(Top_switch_status);
+        Serial.print(" ");
+        delay(2000);
+        Serial.print("Bottom Switch: ");                           // Prints Status of the bottom switch
+        Serial.println(Bottom_switch_status);
+        delay(2000);
+    }
+    
+    while (Top_switch_status == 1 && Bottom_switch_status == 1);     // While Full tank, engage the drain pump; Also, starts at the starting water level or full tank
+
+    
+   if (Top_switch_status == 0 && Bottom_switch_status == 0)          // Checks the status of waterlevel by sensing if it's below the bottom switch on the float
+   {
+   
+    do 
+    {
+        digitalWrite(pump, LOW);
+        digitalWrite(drain_pump, HIGH);       // Filling Fresh 
+
+        Top_switch_status = digitalRead(top_switch);                 // Reads status of the top switch
+        Bottom_switch_status = digitalRead(bottom_switch);           // Reads status of the bottom switch
+
+        Serial.print("Top Switch: ");                               // Prints Status of the top switch
+        Serial.println(Top_switch_status);
+        Serial.print(" ");
+        delay(2000);
+        Serial.print("Bottom Switch: ");                           // Prints Status of the bottom switch
+        Serial.println(Bottom_switch_status);
+        delay(2000);
+    }
+   
+    while (Top_switch_status == 0 or Bottom_switch_status == 0);   // Drained
+
+   
+
+        do                                                        // End the cycle
+        {
+          digitalWrite(Signal, LOW);
+          break;
+        } 
+
+        while(Top_switch_status == 1 && Bottom_switch_status == 1);      // Checks the status of waterlevel. While both switches are in the open state, it runs the endsignal loop, ending the cycle
+
+   }
+}              
